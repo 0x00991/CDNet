@@ -1,0 +1,102 @@
+from threading import Thread
+import requests
+from fastapi import FastAPI, Response
+from fastapi.responses import RedirectResponse, JSONResponse
+import time
+import json
+import tqdm
+import random
+from secret import CDNS, API_KEY
+MAX_SIZE_SIZE = 1024**3 # 1 GiB
+
+ONLINECDNS = [] # 마지막 업데이트 주기에서 응답을 보낸 서버들.
+
+
+FilesInfos = []
+LatestFilesInfo = {}
+
+def getFilesInfoFromNode(url: str):
+    try:
+        res = requests.get(f"https://{url}/api/info?key={API_KEY}", timeout=5)
+        data: dict = res.json()
+        if data.__contains__("error"):
+            raise Exception(f"error: {data['error']}")
+        
+        new_data = {}
+        for k, v in data.items():
+            new_data[k] = v
+            new_data[k]["url"] = f"https://{url}/get"
+        FilesInfos.append(new_data)
+    except:
+        return
+    ONLINECDNS.append(url)
+
+def updateFilesToNode(): # 최대 len(CDNS)*5초 소요됨.
+    if not LatestFilesInfo:
+        return
+    
+    latestjson = json.dumps(LatestFilesInfo, ensure_ascii=False)
+    print("[INFO] Requesting to Node to update file info..")
+    for url in tqdm.tqdm(CDNS, leave=False):
+        try:
+            res = requests.post(f"https://{url}/api/update?key={API_KEY}", timeout=5, json=latestjson) # json 파일을 서버에 보낸다.
+            res.raise_for_status()
+        except:
+            print(f"[ERROR] CDN {url} passed.")
+            ONLINECDNS.remove(url) if url in ONLINECDNS else None # 실패시 ONLINECDNS에 있으면 제거.
+            
+def updateFiles():
+    FilesInfos.clear()
+    ONLINECDNS.clear() # 기존 데이터 정리
+    threads = []
+    for c in CDNS:
+        thr = Thread(target=getFilesInfoFromNode, args=(c,), daemon=True) # 노드에서 파일 정보 긁어오기
+        thr.start()
+        threads.append(thr)
+    for t in threads:
+        t.join()
+    
+    for d in FilesInfos: # 각 노드에서 보낸 파일 정보들
+        for k, v in d.items():
+            if not LatestFilesInfo.__contains__(k): # 로컬 최신 정보에 포함되어 있지 않으면
+                LatestFilesInfo[k] = v # 그대로 설정
+                continue
+            
+            if v["lastedit"] > LatestFilesInfo[k]["lastedit"]: # 로컬 최신 정보보다 최신이라면
+                LatestFilesInfo[k] = v # 수정
+                continue
+            
+            continue
+    updateFilesToNode()
+
+UPDATING = False
+def updateThread():
+    global UPDATING
+    print("[INFO] Update Thread Started.")
+    while True:
+        UPDATING = True
+        updateFiles()
+        print("[INFO] Update Completed")
+        UPDATING = False
+        time.sleep(5*60)
+
+updateThr = Thread(target=updateThread, daemon=True)
+updateThr.start()
+
+app = FastAPI(
+    docs_url=None,
+    redoc_url=None,
+    exception_handlers={404: lambda req, exc: Response(content="Not Found.", status_code=404, media_type="text/plain")}
+)
+
+@app.get("/")
+async def main():
+    return Response(content="Hell' World!")
+
+@app.get("/get/{path:path}")
+async def web_get(path):
+    if UPDATING:
+        return JSONResponse(content={"status": "updating", "message": "현재 네트워크의 파일을 업데이트하고 있습니다. 잠시만 기다려주세요.."}, media_type="application/json")
+    if not ONLINECDNS:
+        return JSONResponse(content={"status": "nodeoffline", "message": "현재 모든 노드가 접속 불가 상태입니다. 개발자에게 이 오류를 알려주세요."}, media_type="application/json")
+    return RedirectResponse(url=f"https://{random.choice(ONLINECDNS)}/get/{path}")
