@@ -1,3 +1,7 @@
 .venv/
 __pycache__/
 secret.py
+CDN/
+node.sh
+key.key
+key.pem

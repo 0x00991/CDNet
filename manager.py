@@ -6,8 +6,7 @@ import time
 import json
 import tqdm
 import random
-from secret import CDNS, API_KEY
-MAX_SIZE_SIZE = 1024**3 # 1 GiB
+from secret import CDNS, API_KEY, MAX_SIZE
 
 ONLINECDNS = [] # 마지막 업데이트 주기에서 응답을 보낸 서버들.
 
@@ -25,7 +24,7 @@ def getFilesInfoFromNode(url: str):
         new_data = {}
         for k, v in data.items():
             new_data[k] = v
-            new_data[k]["url"] = f"https://{url}/get"
+            new_data[k]["url"] = f"https://{url}/get/{k}"
         FilesInfos.append(new_data)
     except:
         return
@@ -78,7 +77,7 @@ def updateThread():
         updateFiles()
         print("[INFO] Update Completed")
         UPDATING = False
-        time.sleep(5*60)
+        time.sleep(180) # 3분
 
 updateThr = Thread(target=updateThread, daemon=True)
 updateThr.start()
@@ -96,7 +95,9 @@ async def main():
 @app.get("/get/{path:path}")
 async def web_get(path):
     if UPDATING:
-        return JSONResponse(content={"status": "updating", "message": "현재 네트워크의 파일을 업데이트하고 있습니다. 잠시만 기다려주세요.."}, media_type="application/json")
+        return JSONResponse(content={"status": "updating", "message": "현재 네트워크의 파일을 업데이트하고 있습니다. 잠시만 기다려주세요.."})
     if not ONLINECDNS:
-        return JSONResponse(content={"status": "nodeoffline", "message": "현재 모든 노드가 접속 불가 상태입니다. 개발자에게 이 오류를 알려주세요."}, media_type="application/json")
+        return JSONResponse(content={"status": "nodeoffline", "message": "현재 모든 노드가 접속 불가 상태입니다. 개발자에게 이 오류를 알려주세요."})
+    if not LatestFilesInfo.__contains__(path):
+        return JSONResponse(content={"status": "notfound", "message": "요청하신 파일이 없거나, 아직 동기화되지 않았습니다. 잠시만 기다려주세요."})
     return RedirectResponse(url=f"https://{random.choice(ONLINECDNS)}/get/{path}")

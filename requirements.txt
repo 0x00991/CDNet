@@ -2,3 +2,6 @@ fastapi
 requests
 uvicorn
 tqdm
+python-multipart
+aiofiles
+aiohttp
