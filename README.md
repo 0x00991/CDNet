@@ -47,12 +47,12 @@
 
 ## API
 ### Manager
-/get/<FilePath> - Redirect
+/get/<FilePath>?dkey=<DOWN-KEY> - Redirect
 ### CDN
 /api/info?key=<API-KEY> - 200
 POST /api/update?key=<API-KEY> - 201
 
-/get/<FilePath> - 200
+/get/<FilePath>?dkey=<DOWN-KEY> - 200
 /api/upload?key=<API-KEY>&filename=<FILENAME> [BODY: File] - 201
 
 
