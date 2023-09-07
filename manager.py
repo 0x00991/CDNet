@@ -6,7 +6,7 @@ import time
 import json
 import tqdm
 import random
-from secret import CDNS, API_KEY, MAX_SIZE
+from secret import CDNS, API_KEY, MAX_SIZE, DOWN_KEY
 
 ONLINECDNS = [] # 마지막 업데이트 주기에서 응답을 보낸 서버들.
 
@@ -93,11 +93,13 @@ async def main():
     return Response(content="Hell' World!")
 
 @app.get("/get/{path:path}")
-async def web_get(path):
+async def web_get(path, dkey: str = None):
+    if not dkey or dkey != DOWN_KEY:
+        return Response(status_code=400)
     if UPDATING:
         return JSONResponse(content={"status": "updating", "message": "현재 네트워크의 파일을 업데이트하고 있습니다. 잠시만 기다려주세요.."})
     if not ONLINECDNS:
         return JSONResponse(content={"status": "nodeoffline", "message": "현재 모든 노드가 접속 불가 상태입니다. 개발자에게 이 오류를 알려주세요."})
     if not LatestFilesInfo.__contains__(path):
         return JSONResponse(content={"status": "notfound", "message": "요청하신 파일이 없거나, 아직 동기화되지 않았습니다. 잠시만 기다려주세요."})
-    return RedirectResponse(url=f"https://{random.choice(ONLINECDNS)}/get/{path}")
+    return RedirectResponse(url=f"https://{random.choice(ONLINECDNS)}/get/{path}?dkey={DOWN_KEY}")

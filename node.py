@@ -2,7 +2,7 @@ from fastapi import FastAPI, Response, Request, UploadFile
 from fastapi.responses import JSONResponse, FileResponse
 import aiofiles
 import aiohttp
-from secret import MAX_SIZE, API_KEY
+from secret import MAX_SIZE, API_KEY, DOWN_KEY
 import asyncio
 import pickle
 from os.path import isfile, isdir
@@ -124,7 +124,9 @@ async def api_fileupload(file: UploadFile = None, key: str = None, filename: str
     Holder.unhold()
     
 @app.get("/get/{path:path}")
-async def file_get(path):
+async def file_get(path, dkey: str = None):
+    if not dkey or dkey != DOWN_KEY:
+        return Response(status_code=400)
     if path.find("..") != -1 or path.find("./") != -1 or path.find("\\") != -1:
         return Response(status_code=400)
     if not FILEDATA.__contains__(path) or FILEDATA[path].deleted():
