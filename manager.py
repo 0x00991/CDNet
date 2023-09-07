@@ -11,8 +11,8 @@ from secret import CDNS, API_KEY, MAX_SIZE, DOWN_KEY
 ONLINECDNS = [] # 마지막 업데이트 주기에서 응답을 보낸 서버들.
 
 
-FilesInfos = []
-LatestFilesInfo = {}
+FilesInfos = [] # 임시 리스트 - 작업 실행 시마다 비워짐
+LatestFilesInfo = {} # 최신 파일 정보 - get route에서 체크, 노드로 전송됨
 
 def getFilesInfoFromNode(url: str):
     try:
@@ -49,7 +49,7 @@ def updateFiles():
     ONLINECDNS.clear() # 기존 데이터 정리
     threads = []
     for c in CDNS:
-        thr = Thread(target=getFilesInfoFromNode, args=(c,), daemon=True) # 노드에서 파일 정보 긁어오기
+        thr = Thread(target=getFilesInfoFromNode, args=(c,), daemon=True) # 노드에서 파일 정보 받기
         thr.start()
         threads.append(thr)
     for t in threads:
@@ -57,11 +57,11 @@ def updateFiles():
     
     for d in FilesInfos: # 각 노드에서 보낸 파일 정보들
         for k, v in d.items():
-            if not LatestFilesInfo.__contains__(k): # 로컬 최신 정보에 포함되어 있지 않으면
+            if not LatestFilesInfo.__contains__(k): # LatestFilesInfo에 포함되어 있지 않으면
                 LatestFilesInfo[k] = v # 그대로 설정
                 continue
             
-            if v["lastedit"] > LatestFilesInfo[k]["lastedit"]: # 로컬 최신 정보보다 최신이라면
+            if v["lastedit"] > LatestFilesInfo[k]["lastedit"]: # LatestFilesInfo보다 최신이라면
                 LatestFilesInfo[k] = v # 수정
                 continue
             continue

@@ -42,7 +42,7 @@ app = FastAPI(
     exception_handlers={404: lambda req, exc: Response(content="Not Found.", status_code=404, media_type="text/plain")},
 )
 
-@app.get("/api/info")
+@app.get("/api/info") # 매니저에서만 사용
 async def api_fileinfo(key: str = None):
     if not key or key != API_KEY:
         return Response(status_code=204)
@@ -53,7 +53,7 @@ async def api_fileinfo(key: str = None):
         returnjson[fd.name()] = {"lastedit": fd.lastedit(), "deleted": fd.deleted()}
     return JSONResponse(returnjson)
 
-@app.post("/api/update")
+@app.post("/api/update") # 매니저에서만 사용
 async def api_fileupdate(request: Request, key: str = None):
     if not key or key != API_KEY:
         return Response(status_code=204)
@@ -74,7 +74,7 @@ async def api_fileupdate(request: Request, key: str = None):
             )
     return JSONResponse(content=body, status_code=201)
 
-@app.delete("/api/delete")
+@app.delete("/api/delete") # To-Do: 
 async def api_filedelete(key: str = None, filename: str = None):
     if not key or key != API_KEY:
         return Response(status_code=204)
