@@ -24,7 +24,7 @@ def getFilesInfoFromNode(url: str):
         new_data = {}
         for k, v in data.items():
             new_data[k] = v
-            new_data[k]["url"] = f"https://{url}/get/{k}"
+            new_data[k]["url"] = f"https://{url}/get/{k}?dkey={DOWN_KEY}"
         FilesInfos.append(new_data)
     except:
         return
@@ -64,7 +64,6 @@ def updateFiles():
             if v["lastedit"] > LatestFilesInfo[k]["lastedit"]: # 로컬 최신 정보보다 최신이라면
                 LatestFilesInfo[k] = v # 수정
                 continue
-            
             continue
     updateFilesToNode()
 
