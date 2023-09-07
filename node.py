@@ -63,14 +63,15 @@ async def api_fileupdate(request: Request, key: str = None):
     if type(body) == str:
         body = json.loads(body)
     for k, v in body.items():
-        UPDATE_QUEUE.append(
-            {
-                "name": k,
-                "lastedit": v["lastedit"],
-                "url": v["url"],
-                "deleted": v["deleted"]
-            }
-        )
+        if not FILEDATA.__contains__(k) or FILEDATA[k].isLegacy(v["lastedit"]): # FILEDATA에 없거나 isLegacy가 True면
+            UPDATE_QUEUE.append(
+                {
+                    "name": k,
+                    "lastedit": v["lastedit"],
+                    "url": v["url"],
+                    "deleted": v["deleted"]
+                }
+            )
     return JSONResponse(content=body, status_code=201)
 
 @app.delete("/api/delete")
@@ -173,6 +174,7 @@ async def _task():
             UPDATE_QUEUE.remove(fd) # org update queue에서 삭제
             continue
         
+        print(f"[UPDATE] Filename: {fd['name']}, Deleted: {fd['deleted']}")
         # update가 true일 때만 실행됨
         
         if fd["deleted"]: # 삭제되었다면
