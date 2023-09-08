@@ -88,7 +88,7 @@ async def api_filedelete(key: str = None, filename: str = None):
     await writedata()
     return JSONResponse({"status": "success", "message": "요청하신 파일이 삭제되었습니다."})
 
-@app.post("/api/upload")
+@app.post("/api/upload") # To-Do: path 처리
 async def api_fileupload(file: UploadFile = None, key: str = None, filename: str = None):
     if not key or key != API_KEY or not filename or not file:
         return Response(status_code=204)

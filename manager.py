@@ -6,8 +6,7 @@ import time
 import json
 import tqdm
 import random
-from secret import CDNS, API_KEY, MAX_SIZE, DOWN_KEY
-
+from secret import CDNS, API_KEY, DOWN_KEY
 ONLINECDNS = [] # 마지막 업데이트 주기에서 응답을 보낸 서버들.
 
 
@@ -35,13 +34,13 @@ def updateFilesToNode(): # 최대 len(CDNS)*5초 소요됨.
         return
     
     latestjson = json.dumps(LatestFilesInfo, ensure_ascii=False)
-    print("[INFO] Requesting to Node to update file info..")
+    print("[INFO] Sending updated file information to nodes..")
     for url in tqdm.tqdm(CDNS, leave=False):
         try:
             res = requests.post(f"https://{url}/api/update?key={API_KEY}", timeout=5, json=latestjson) # json 파일을 서버에 보낸다.
             res.raise_for_status()
         except:
-            print(f"[ERROR] CDN {url} passed.")
+            print(f"[WARNING] CDN `{url}` passed.")
             ONLINECDNS.remove(url) if url in ONLINECDNS else None # 실패시 ONLINECDNS에 있으면 제거.
             
 def updateFiles():
@@ -52,6 +51,7 @@ def updateFiles():
         thr = Thread(target=getFilesInfoFromNode, args=(c,), daemon=True) # 노드에서 파일 정보 받기
         thr.start()
         threads.append(thr)
+    print("[INFO] Collecting file information from nodes..")
     for t in threads:
         t.join()
     
@@ -59,10 +59,12 @@ def updateFiles():
         for k, v in d.items():
             if not LatestFilesInfo.__contains__(k): # LatestFilesInfo에 포함되어 있지 않으면
                 LatestFilesInfo[k] = v # 그대로 설정
+                print(f"[UPDATE] {'ADD' if not v['deleted'] else 'DEL'} `{k}` URL = `{v['url']}` TS = `{v['lastedit']}`")
                 continue
             
             if v["lastedit"] > LatestFilesInfo[k]["lastedit"]: # LatestFilesInfo보다 최신이라면
                 LatestFilesInfo[k] = v # 수정
+                print(f"[UPDATE] {'MOD' if not v['deleted'] else 'DEL'} `{k}` URL = `{v['url']}` TS = `{v['lastedit']}`")
                 continue
             continue
     updateFilesToNode()
@@ -74,7 +76,7 @@ def updateThread():
     while True:
         UPDATING = True
         updateFiles()
-        print("[INFO] Update Completed")
+        print("[INFO] Task complete.")
         UPDATING = False
         time.sleep(180) # 3분
 
