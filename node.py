@@ -124,6 +124,13 @@ async def api_fileupload(file: UploadFile = None, key: str = None, filename: str
     shutil.move(FILES_DIR+"/temp/"+tempname, FILES_DIR+"/"+filename)
     Holder.unhold()
     
+    return JSONResponse({
+        "status": "success",
+        "message": "요청하신 파일이 성공적으로 업로드 되었습니다.",
+        "filename": filename,
+        "timestamp": FILEDATA[filename].lastedit()
+    })
+    
 @app.get("/get/{path:path}")
 async def file_get(path, dkey: str = None):
     if not dkey or dkey != DOWN_KEY:

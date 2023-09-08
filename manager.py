@@ -91,7 +91,7 @@ app = FastAPI(
 
 @app.get("/")
 async def main():
-    return Response(content="Hell' World!")
+    return Response(status_code=500)
 
 @app.get("/get/{path:path}")
 async def web_get(path, dkey: str = None):
