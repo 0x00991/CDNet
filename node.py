@@ -78,6 +78,8 @@ async def api_fileupdate(request: Request, key: str = None):
 async def api_filedelete(key: str = None, filename: str = None):
     if not key or key != API_KEY:
         return Response(status_code=204)
+    if filename.find("/") == 0 or filename.find("..") != -1 or filename.find("\\") != -1:
+        return Response(status_code=204)
     if not FILEDATA.__contains__(filename):
         return JSONResponse({"status": "error", "message": "존재하지 않는 파일입니다."})
     if FILEDATA[filename].deleted():
@@ -87,6 +89,16 @@ async def api_filedelete(key: str = None, filename: str = None):
     os.remove(FILES_DIR+"/"+filename)
     await writedata()
     return JSONResponse({"status": "success", "message": "요청하신 파일이 삭제되었습니다."})
+
+@app.delete("/api/delete_key")
+async def api_file_deletekey(key: str = None, filename: str = None):
+    if not key or key != API_KEY:
+        return Response(status_code=204)
+    if not FILEDATA.__contains__(filename):
+        return JSONResponse({"status": "error", "message": "존재하지 않거나 이미 삭제된 파일 이름입니다."})
+    del FILEDATA[filename]
+    await writedata()
+    return JSONResponse({"status": "success", "message": "삭제되었습니다."})
 
 @app.post("/api/upload") # To-Do: path 처리
 async def api_fileupload(file: UploadFile = None, key: str = None, filename: str = None):
