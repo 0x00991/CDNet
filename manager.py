@@ -91,6 +91,8 @@ def updateFiles():
         UPDATING = True
         _updateFiles()
         UPDATING = False
+        return True
+    return False
 
 def updateThread():
     global UPDATING
@@ -145,9 +147,10 @@ async def web_upload(file: UploadFile = None, key: str = None, filename: str = N
         res = await session.post(f"https://{selcdn}/api/upload?key={key}&filename={filename}", data=formdata)
         
         js = await res.json()
-        js["node"] = CDNS_LABEL[selcdn]
-        js["node_url"] = selcdn
-        updateFiles()
+        js["uploaded"] = {"name": CDNS_LABEL[selcdn], "host": selcdn}
+        while not updateFiles():
+            time.sleep(1)
+        js["affected"] = list(map(lambda c: CDNS_LABEL[c], ONLINECDNS))
         return JSONResponse(js, res.status)
 
 @app.delete("/api/delete")
@@ -171,7 +174,8 @@ async def web_delete(key: str = None, filename: str = None, delkeys: str = None)
                 dk = await _api_deldeleted()
                 js["DelKeyResponse"] = dk
             else:
-                updateFiles()
+                while not updateFiles():
+                    time.sleep(1)
                 
         return JSONResponse(js)
 
