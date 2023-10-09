@@ -155,7 +155,6 @@ async def web_upload(file: UploadFile = None, key: str = None, filename: str = N
 
 @app.delete("/api/delete")
 async def web_delete(key: str = None, filename: str = None, delkeys: str = None):
-    print(delkeys)
     if not key or key != API_KEY:
         return Response(status_code=204)
     if filename.find("/") == 0 or filename.find("..") != -1 or filename.find("\\") != -1:
